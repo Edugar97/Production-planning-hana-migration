@@ -154,9 +154,7 @@ production-planning-hana-migration/
 ├── docs/
 │   ├── PACE_Method_SQLServer_to_SAP_HANA.pdf          # methodology write-up
 │   └── PACE_Technical_Deep_Dive_SQLServer_to_SAP_HANA.pdf   # code deep-dive
-└── src/
-    ├── before_sqlserver.sql     # legacy T-SQL   (sanitized excerpt)
-    └── after_saphana.sql        # rebuilt SQLScript (sanitized excerpt)
+
 ```
 
 > The `src/` files are **sanitized excerpts** kept for illustration. The full production procedure is client-confidential and is intentionally not published here.
