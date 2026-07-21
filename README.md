@@ -176,8 +176,8 @@ This project is based on real client work. To respect that, **all published mate
 
 **Author:** Raúl · *SQL / Data Engineering*
 
-- **LinkedIn** — `[www.linkedin.com/in/raúl-eduardo-garcía-cuéllar-5843bb40aL]`
-- **GitHub** — `[https://github.com/Edugar97]`
-- **Email** — `[raulcuellar.rc97@gmail.com]`
+- **LinkedIn** — [raúl-eduardo-garcía-cuéllar](https://www.linkedin.com/in/raúl-eduardo-garcía-cuéllar-5843bb40aL)
+- **GitHub** — [github.com/Edugar97](https://github.com/Edugar97)
+- **Email** — [raulcuellar.rc97@gmail.com](mailto:raulcuellar.rc97@gmail.com)
 
 <p align="center"><sub>Built to show the work behind a real SQL Server → SAP HANA migration — clearly, and without exposing client data.</sub></p>
