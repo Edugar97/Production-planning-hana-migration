@@ -66,6 +66,7 @@ The legacy procedure was a classic monolith:
 - The rule *"use this clone's factor, else fall back to the default clone"* **copy-pasted as nine near-identical `UNION ALL` blocks** (~15 lines each).
 - **Raw divisions everywhere** in the backward stage chain — one zero or missing value could break the whole run.
 - **Stage lengths hardcoded** as per-product day ranges scattered throughout the query.
+- **Latent copy-paste bugs**: in one stage block both `WHEN` branches tested the same condition, so the second could never run; in two others, inventory was checked against a hardcoded clone instead of the input parameter.
 - Reliance on SQL Server-only constructs: `IIF`, `DATEADD` / `GETDATE` / `DATEPART`, inline `DECLARE @x = (SELECT …)`, `#temp` tables, `COLLATE`, and implicit type coercion.
 
 ## Approach — the PACE method
@@ -119,6 +120,21 @@ COALESCE(clone_factor, default_factor) AS "FactorFinal"
 
 **Six more transformations →** dates, variable loading, strict typing, hardcoded windows and parameterization are in the [Technical Deep-Dive](./docs/PACE_Technical_Deep_Dive_SQLServer_to_SAP_HANA.pdf).
 
+### Visual walkthrough
+
+Four longer side-by-side excerpts, taken from the real procedure and sanitized. The same code is available as text in [`src/`](./src).
+
+<p align="center">
+  <img src="./docs/images/02_duplicated_blocks.png" alt="Nine copy-pasted UNION ALL blocks replaced by one set-based query" width="900">
+</p>
+
+| | Transformation | What it shows |
+|---|---|---|
+| 1 | [Hardcoded date windows → configured stage durations](./docs/images/01_stage_windows.png) | Nine hand-tuned day ranges replaced by one rule driven by a duration table with monthly overrides. |
+| 2 | [Nine `UNION ALL` blocks → one set-based query](./docs/images/02_duplicated_blocks.png) | The copy-paste fallback logic collapsed into `LEFT JOIN` + `COALESCE`, including the two latent bugs it carried. |
+| 3 | [Unprotected cascade → NULL-safe, division-safe](./docs/images/03_safe_division.png) | `NULLIF`, `COALESCE` and `IFNULL` guarding every step of the backward stage chain and the yield calculation. |
+| 4 | [Hardcoded clone branches → one parameter](./docs/images/04_parameterized_clones.png) | Per-clone `IIF` branches (with inconsistent `NULL` handling) replaced by a single parameterized query. |
+
 ## Migration decisions at a glance
 
 | Concern | SQL Server (before) | SAP HANA (after) |
@@ -137,6 +153,7 @@ COALESCE(clone_factor, default_factor) AS "FactorFinal"
 - **Output parity** — the same staged report (minimum and differentiation units per stage, plus programmed vs. projected production by week, month and year).
 - **Simpler** — ~900 → ~700 lines, 14 → 6 temporary tables, 9 → 1 fallback expression.
 - **More robust** — no divide-by-zero or `NULL` failures; safe by construction.
+- **Cleaner logic** — two latent copy-paste bugs removed along the way.
 - **More maintainable** — stage durations and factors are now **configuration, not code**; the business retunes SAP tables instead of editing the procedure.
 
 ## Tech stack
@@ -152,9 +169,16 @@ COALESCE(clone_factor, default_factor) AS "FactorFinal"
 production-planning-hana-migration/
 ├── README.md
 ├── docs/
-│   ├── PACE_Method_SQLServer_to_SAP_HANA.pdf          # methodology write-up
-│   └── PACE_Technical_Deep_Dive_SQLServer_to_SAP_HANA.pdf   # code deep-dive
-
+│   ├── PACE_Method_SQLServer_to_SAP_HANA.pdf                # methodology write-up
+│   ├── PACE_Technical_Deep_Dive_SQLServer_to_SAP_HANA.pdf   # code deep-dive
+│   └── images/                                              # before/after comparisons
+│       ├── 01_stage_windows.png
+│       ├── 02_duplicated_blocks.png
+│       ├── 03_safe_division.png
+│       └── 04_parameterized_clones.png
+└── src/
+    ├── before_sqlserver_sanitized.sql   # legacy T-SQL excerpts
+    └── after_hana_sanitized.sql         # rebuilt SQLScript excerpts
 ```
 
 > The `src/` files are **sanitized excerpts** kept for illustration. The full production procedure is client-confidential and is intentionally not published here.
@@ -165,6 +189,7 @@ production-planning-hana-migration/
 |---|---|
 | [**PACE Method**](./docs/PACE_Method_SQLServer_to_SAP_HANA.pdf) | The end-to-end methodology and the business context, for any audience. |
 | [**Technical Deep-Dive**](./docs/PACE_Technical_Deep_Dive_SQLServer_to_SAP_HANA.pdf) | Seven side-by-side before/after query transformations, for engineers. |
+| [**Source excerpts**](./src) | Longer sanitized T-SQL and SQLScript excerpts for four of the transformations, as plain `.sql`. |
 
 ## A note on confidentiality
 
@@ -172,9 +197,9 @@ This project is based on real client work. To respect that, **all published mate
 
 ## About
 
-**Author:** Raúl · *SQL / Data Engineering*
+**Author:** Raúl Eduardo García Cuéllar · *SQL / Data Engineering*
 
-- **LinkedIn** — [raúl-eduardo-garcía-cuéllar](https://www.linkedin.com/in/raúl-eduardo-garcía-cuéllar-5843bb40aL)
+- **LinkedIn** — [raúl-eduardo-garcía-cuéllar](https://www.linkedin.com/in/raúl-eduardo-garcía-cuéllar-5843bb40a)
 - **GitHub** — [github.com/Edugar97](https://github.com/Edugar97)
 - **Email** — [raulcuellar.rc97@gmail.com](mailto:raulcuellar.rc97@gmail.com)
 
